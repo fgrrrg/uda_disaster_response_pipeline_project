@@ -3,7 +3,16 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
+    '''
+    Load data from csv files and returns a pandas dataframe
     
+    input:
+    messages_filepath - messages csv file
+    categories_filepath - categories csv file
+
+    output:
+    df - pandas dataframe merging the inputs
+    '''
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
     df = pd.merge(messages,categories, how='left', on='id')
@@ -11,7 +20,10 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
-    
+    '''
+    Cleans the data and replaces the "categories" column with encoded value columns
+    Removes duplicates and badly encoded data
+    '''
     categories = df.categories.str.split(pat=';',expand=True)
     row = categories[:1]
     category_colnames = row.apply(lambda x:x.str[:-2]).iloc[0].values
@@ -30,8 +42,15 @@ def clean_data(df):
     return df
 
 def save_data(df, database_filename):
-    engine = create_engine('sqlite:///' + database_filename + '.db')
-    df.to_sql('database', engine, index=False)  
+    '''
+    Saves the dataframe to an SQL database using database_filename
+    input
+    df - dataframe to export
+    output
+    database_filename - filename of the exported database file
+    '''
+    engine = create_engine('sqlite:///' + database_filename)
+    df.to_sql('database', engine, index=False, if_exists='replace')  
 
 
 def main():

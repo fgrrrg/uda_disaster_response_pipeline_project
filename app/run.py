@@ -1,14 +1,14 @@
 import json
 import plotly
 import pandas as pd
-
+import numpy as np
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
-from sklearn.externals import joblib
+import joblib
 from sqlalchemy import create_engine
 
 
@@ -26,11 +26,11 @@ def tokenize(text):
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/database.db')
+df = pd.read_sql_table('database', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/model.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
@@ -40,9 +40,11 @@ def index():
     
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
+    genre_counts = df.groupby(by='genre')['message'].count()
     genre_names = list(genre_counts.index)
-    
+    genre_msg_len = df.groupby('genre')['message'].apply(lambda x: np.mean(x.str.len()))
+
+
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
@@ -58,6 +60,24 @@ def index():
                 'title': 'Distribution of Message Genres',
                 'yaxis': {
                     'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Genre"
+                }
+            }
+        },
+                {
+            'data': [
+                Bar(
+                    x=genre_names,
+                    y=genre_msg_len
+                )
+            ],
+
+            'layout': {
+                'title': 'Average length of the message by genre',
+                'yaxis': {
+                    'title': "Length"
                 },
                 'xaxis': {
                     'title': "Genre"

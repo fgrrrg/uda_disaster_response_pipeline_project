@@ -25,6 +25,17 @@ nltk.download(['punkt', 'wordnet','stopwords','averaged_perceptron_tagger'])
 #asd
 
 def load_data(database_filepath):
+    '''
+    Loads data from SQL into a pandas dataframe, separates the variables into different dataframes
+    input:
+    database_filepath - the location of the database file
+
+    output
+    X - explanatory variable
+    y - categories for classification
+    y.columns - category names
+    '''
+    
     engine = create_engine('sqlite:///' + database_filepath)
     df = pd.read_sql("SELECT * FROM database", engine)
     X = df['message']
@@ -32,6 +43,14 @@ def load_data(database_filepath):
     return X,y,y.columns
 
 def tokenize(text):
+    '''
+    Takes a text, removes the non-alphanumeric characters, removes stopwords, runs lemmatization and tokenization
+    input:
+    text - string to tokenize
+    output:
+    tokens - created tokens from the string
+    '''
+    
     url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     detected_urls = re.findall(url_regex, text)
     for url in detected_urls:
@@ -46,6 +65,13 @@ def tokenize(text):
 
 
 def build_model():
+    '''
+    Creates a machine learning classification pipeline
+    Runs gridsearchcv for parameter tuning
+    
+    output:
+    pipeline - machine learning pipeline
+    '''
     pipeline = Pipeline([
         ('features', FeatureUnion([
 
@@ -57,13 +83,38 @@ def build_model():
 
         ('clf', MultiOutputClassifier(KNeighborsClassifier(n_neighbors=3)))
     ])
+    
+
+    parameters = { 
+        'clf__estimator__n_estimators': [25, 50,75],
+        'clf__estimator__learning_rate' : [0.5,1,1.5,0.2]
+    }
+    cv = GridSearchCV(pipeline,param_grid=parameters, n_jobs=-1)
+
     return pipeline
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    '''
+    Evaluates the model performance using classification report
+    input:
+    model - ML model pipeline
+    X_test - test messages
+    Y_test - test categories
+    category_names - name of the groups for printing the report
+
+    output:
+    classification report showing precision, recall, f1-score
+    '''
     Y_test_pred = model.predict(X_test)
     print(classification_report(Y_test,Y_test_pred,target_names=category_names))
 
 def save_model(model, model_filepath):
+    '''
+    saves the ml model to a pickle file
+    input:
+    model - ml pipeline
+    model_filepath - pickle file save location
+    '''
     with open (model_filepath,'wb') as file:
         pickle.dump(model,file)
 
